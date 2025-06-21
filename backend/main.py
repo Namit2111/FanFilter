@@ -20,4 +20,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(webscrape_router, prefix=settings.API_V1_STR) 
+app.include_router(webscrape_router, prefix=settings.API_V1_STR)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000) 
