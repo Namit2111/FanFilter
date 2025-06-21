@@ -5,3 +5,5 @@ aiohttp
 python-dotenv
 aiofiles
 pydantic-settings 
+google-generativeai
+google-genai
