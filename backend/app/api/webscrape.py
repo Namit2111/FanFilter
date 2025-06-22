@@ -36,6 +36,9 @@ async def webscrape(request: WebscrapeRequest):
         user_id = id.user_id
         for user in users:
             if user.get("user_id") == user_id:
+                user["tags"] = id.tags
+                user["ai_analysis_notes"] = id.ai_analysis_notes
+                user["bot_score"] = id.bot_score
                 final_users.append(user)
 
     with open("analyzed_users.json", "w") as f:

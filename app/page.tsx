@@ -79,6 +79,9 @@ export default function HomePage() {
       "Media Count",
       "Verified",
       "Business Account",
+      "Tags",
+      "AI Analysis Notes",
+      "Bot Score",
     ]
 
     const rows = result.followers.map((f) => [
@@ -95,6 +98,9 @@ export default function HomePage() {
       f.media_count,
       f.blue_verified ? "Yes" : "No",
       f.business_account ? "Yes" : "No",
+      f.tags,
+      f.ai_analysis_notes,
+      f.bot_score,
     ])
 
     const csvContent = [
