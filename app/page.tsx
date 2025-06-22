@@ -206,10 +206,13 @@ export default function HomePage() {
                     Analysis Results
                   </span>
                   {result?.followers?.length ? (
-                    <Button variant="outline" size="sm" onClick={downloadCSV}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Download CSV
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-500">Download CSV for full analysis details</p>
+                      <Button variant="outline" size="sm" onClick={downloadCSV}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Download CSV
+                      </Button>
+                    </div>
                   ) : null}
                 </CardTitle>
               </CardHeader>
