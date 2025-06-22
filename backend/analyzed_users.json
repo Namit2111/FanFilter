@@ -1,126 +1,29 @@
 {
-    "total_matches": 13,
+    "total_matches": 3,
     "users": [
         {
-            "user_id": "3368029493",
+            "user_id": "4914384040",
             "tags": [
-                "AI developer",
-                "Digital nomad"
+                "business"
             ],
-            "ai_analysis_notes": "Active AI developer with a digital nomad lifestyle.",
-            "bot_score": 1.1
+            "ai_analysis_notes": "The Babylon Bee is a business account that produces satirical news.",
+            "bot_score": 1.0
         },
         {
-            "user_id": "1856982013745504256",
+            "user_id": "34743251",
             "tags": [
-                "AI",
-                "Physics",
-                "Math",
-                "Stats",
-                "Indie dev"
+                "business"
             ],
-            "ai_analysis_notes": "Student with interests in AI and related fields, building projects.",
-            "bot_score": 1.3
+            "ai_analysis_notes": "SpaceX is a business account that designs, manufactures and launches rockets and spacecraft.",
+            "bot_score": 1.0
         },
         {
-            "user_id": "1882809378258251777",
+            "user_id": "20545835",
             "tags": [
-                "AI",
-                "Web3",
-                "Blockchain",
-                "NFTs",
-                "DeFi"
+                "business"
             ],
-            "ai_analysis_notes": "Enthusiast and visionary in the Web3 space with a focus on AI.",
-            "bot_score": 2.1
-        },
-        {
-            "user_id": "574247535",
-            "tags": [
-                "Product Designer",
-                "UX/UI"
-            ],
-            "ai_analysis_notes": "Product Designer at a design firm.",
-            "bot_score": 1.4
-        },
-        {
-            "user_id": "385770315",
-            "tags": [
-                "SaaS founder"
-            ],
-            "ai_analysis_notes": "SaaS founder.",
-            "bot_score": 1.5
-        },
-        {
-            "user_id": "1552962248271855624",
-            "tags": [
-                "Indie dev"
-            ],
-            "ai_analysis_notes": "Indie dev building and launching projects.",
-            "bot_score": 1.2
-        },
-        {
-            "user_id": "73647967",
-            "tags": [
-                "Indie hacker",
-                "SWE"
-            ],
-            "ai_analysis_notes": "Senior SWE indie hacker working on projects.",
-            "bot_score": 1.6
-        },
-        {
-            "user_id": "1888269165414539264",
-            "tags": [
-                "Indie hacker",
-                "SaaS"
-            ],
-            "ai_analysis_notes": "Building a SaaS product.",
-            "bot_score": 1.3
-        },
-        {
-            "user_id": "1921723057502146560",
-            "tags": [
-                "AI",
-                "Indie dev"
-            ],
-            "ai_analysis_notes": "Young founder building AI platform.",
-            "bot_score": 1.7
-        },
-        {
-            "user_id": "1256676837633126400",
-            "tags": [
-                "Indie dev",
-                "Solopreneur"
-            ],
-            "ai_analysis_notes": "Solopreneur building a product.",
-            "bot_score": 1.3
-        },
-        {
-            "user_id": "1881068089254821888",
-            "tags": [
-                "AI",
-                "SaaS",
-                "Solopreneur"
-            ],
-            "ai_analysis_notes": "Building an AI assistant.",
-            "bot_score": 1.4
-        },
-        {
-            "user_id": "3189538068",
-            "tags": [
-                "Android developer",
-                "Web developer"
-            ],
-            "ai_analysis_notes": "Sharing knowledge and creations.",
-            "bot_score": 1.5
-        },
-        {
-            "user_id": "1931680485635436544",
-            "tags": [
-                "Indie dev"
-            ],
-            "ai_analysis_notes": "Focusing on startups.",
-            "bot_score": 1.1
+            "ai_analysis_notes": "NEWSMAX is a business account that provides real news.",
+            "bot_score": 1.0
         }
     ]
 }

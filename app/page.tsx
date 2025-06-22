@@ -139,7 +139,7 @@ export default function HomePage() {
           <div className="space-y-8">
             {/* Hero Section */}
             <div className="text-center space-y-4">
-              <h2 className="text-4xl font-bold text-gray-900">Analyze X Profiles with AI</h2>
+              <h2 className="text-4xl font-bold text-gray-900">Filter X Profiles with AI</h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                 Enter usernames and your analysis prompt to get insights about X profiles. Export your results as CSV for
                 further analysis.
@@ -236,12 +236,26 @@ export default function HomePage() {
                                 className="rounded-full"
                               />
                             )}
-                            <div>
+                            <div className="flex-1">
                               <div className="flex items-center gap-1">
                                 <span className="font-medium">{f.name}</span>
                                 {f.blue_verified && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
                               </div>
                               <div className="text-sm text-gray-600">@{f.screen_name}</div>
+                              {f.tags && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {(Array.isArray(f.tags) ? f.tags : f.tags.split(','))
+                                    .filter((tag: string) => tag && tag.trim())
+                                    .map((tag: string, index: number) => (
+                                      <span
+                                        key={index}
+                                        className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"
+                                      >
+                                        {tag.trim()}
+                                      </span>
+                                    ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </li>
