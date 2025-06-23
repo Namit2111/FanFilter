@@ -129,7 +129,7 @@ export default function HomePage() {
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                 <Search className="w-4 h-4 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">followfind</h1>
+              <h1 className="text-2xl font-bold text-gray-900">fanfilter</h1>
             </div>
           </div>
         </header>
@@ -141,8 +141,8 @@ export default function HomePage() {
             <div className="text-center space-y-4">
               <h2 className="text-4xl font-bold text-gray-900">Filter X Profiles with AI</h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Enter usernames and your analysis prompt to get insights about X profiles. Export your results as CSV for
-                further analysis.
+                Enter one username and your filter prompt to get insights about X profiles. Export your results as CSV for
+                further filtering.
               </p>
             </div>
 
@@ -151,7 +151,7 @@ export default function HomePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Twitter className="w-5 h-5 text-blue-500" />
-                  Profile Analysis
+                  Filter Followers
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -162,7 +162,7 @@ export default function HomePage() {
                   </Label>
                   <Textarea
                     id="usernames"
-                    placeholder="Enter a single username (example: @elonmusk)"
+                    placeholder="Enter one username (example: @elonmusk)"
                     className="min-h-[80px] resize-none"
                     value={usernameInput}
                     onChange={(e) => setUsernameInput(e.target.value)}
@@ -176,11 +176,11 @@ export default function HomePage() {
                 <div className="space-y-2">
                   <Label htmlFor="prompt" className="flex items-center gap-2 text-sm font-medium">
                     <MessageSquare className="w-4 h-4" />
-                    Analysis Prompt
+                    Filter Prompt
                   </Label>
                   <Textarea
                     id="prompt"
-                    placeholder="What would you like to analyze about this profile?"
+                    placeholder="What would you like to filter about this profile?"
                     className="min-h-[100px] resize-none"
                     value={promptInput}
                     onChange={(e) => setPromptInput(e.target.value)}
@@ -190,7 +190,7 @@ export default function HomePage() {
                 {/* Action Button */}
                 <Button className="w-full bg-blue-500 hover:bg-blue-600" size="lg" onClick={handleAnalyze} disabled={loading}>
                   <Search className="w-4 h-4 mr-2" />
-                  {loading ? "Analyzing..." : "Analyze Profile"}
+                  {loading ? "Filtering..." : "Filter Profile"}
                 </Button>
 
                 {error && <p className="text-sm text-red-600 text-center">{error}</p>}
@@ -203,11 +203,11 @@ export default function HomePage() {
                 <CardTitle className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Download className="w-5 h-5 text-green-600" />
-                    Analysis Results
+                    Filter Results
                   </span>
                   {result?.followers?.length ? (
                     <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-500">Download CSV for full analysis details</p>
+                      <p className="text-sm text-gray-500">Download CSV for full filter details</p>
                       <Button variant="outline" size="sm" onClick={downloadCSV}>
                         <Download className="w-4 h-4 mr-2" />
                         Download CSV
@@ -268,8 +268,8 @@ export default function HomePage() {
                 ) : (
                   <div className="text-center py-12 text-gray-500">
                     <Search className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-lg font-medium mb-2">No analysis yet</p>
-                    <p className="text-sm">Enter a username and prompt above to start analyzing.</p>
+                    <p className="text-lg font-medium mb-2">No filter yet</p>
+                    <p className="text-sm">Enter a username and prompt above to start filtering.</p>
                   </div>
                 )}
               </CardContent>
@@ -280,7 +280,7 @@ export default function HomePage() {
               <Card className="text-center p-6">
                 <Users className="w-8 h-8 mx-auto mb-3 text-blue-500" />
                 <h3 className="font-semibold mb-2">Multiple Profiles</h3>
-                <p className="text-sm text-gray-600">Analyze single or multiple X profiles at once</p>
+                <p className="text-sm text-gray-600">Filter single or multiple X profiles at once</p>
               </Card>
               <Card className="text-center p-6">
                 <MessageSquare className="w-8 h-8 mx-auto mb-3 text-green-500" />
@@ -290,7 +290,7 @@ export default function HomePage() {
               <Card className="text-center p-6">
                 <Download className="w-8 h-8 mx-auto mb-3 text-purple-500" />
                 <h3 className="font-semibold mb-2">Export Data</h3>
-                <p className="text-sm text-gray-600">Download results as CSV for further analysis</p>
+                <p className="text-sm text-gray-600">Download results as CSV for further filtering</p>
               </Card>
             </div>
           </div>
@@ -300,7 +300,7 @@ export default function HomePage() {
         <footer className="bg-white border-t border-gray-200 mt-16">
           <div className="max-w-4xl mx-auto px-4 py-8">
             <div className="text-center text-gray-500">
-              <p>&copy; 2024 followfind. Analyze X profiles with AI-powered insights.</p>
+              <p>&copy; 2024 fanfilter. Filter X profiles with AI-powered insights.</p>
             </div>
           </div>
         </footer>
