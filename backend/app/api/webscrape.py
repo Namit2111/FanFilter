@@ -44,6 +44,7 @@ async def flock_users(request: WebscrapeRequest, event_callback=None):
         try:
             response = await get_twitter_followers(username, next_cursor)
         except HTTPException as e:
+            print(e)
             raise e
         users = response.get("users", [])
         next_cursor = response.get("next_cursor_str")

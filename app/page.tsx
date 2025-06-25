@@ -26,11 +26,14 @@ export default function HomePage() {
   const [result, setResult] = useState<{ count: number; followers: any[] } | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [fetched, setFetched] = useState(0)
+  const [displayCount, setDisplayCount] = useState(10)
+  const ITEMS_PER_PAGE = 10
 
   const handleAnalyze = () => {
     setError("")
     setResult(null)
     setFetched(0)
+    setDisplayCount(ITEMS_PER_PAGE)
 
     const usernames = usernameInput
       .split(/[\s,]+/)
@@ -296,7 +299,7 @@ export default function HomePage() {
                   <div className="space-y-4">
                     <p className="text-sm text-gray-700">Found {result.count} relevant followers:</p>
                     <ul className="grid gap-2">
-                      {result.followers.map((f: any) => (
+                      {result.followers.slice(0, displayCount).map((f: any) => (
                         <li
                           key={f.user_id || f.id}
                           className="border rounded p-3 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -337,6 +340,17 @@ export default function HomePage() {
                         </li>
                       ))}
                     </ul>
+                    {displayCount < result.followers.length && (
+                      <div className="mt-4 text-center">
+                        <Button
+                          variant="outline"
+                          onClick={() => setDisplayCount(prev => prev + ITEMS_PER_PAGE)}
+                          className="w-full max-w-xs"
+                        >
+                          Load More ({result.followers.length - displayCount} remaining)
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12 text-gray-500">
