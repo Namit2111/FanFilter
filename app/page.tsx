@@ -25,10 +25,12 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ count: number; followers: any[] } | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [fetched, setFetched] = useState(0)
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = () => {
     setError("")
     setResult(null)
+    setFetched(0)
 
     const usernames = usernameInput
       .split(/[\s,]+/)
@@ -46,35 +48,40 @@ export default function HomePage() {
       return
     }
 
-    try {
-      setLoading(true)
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/v1/webscrape`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            user_request: usernames[0].replace("@", ""),
-            user_prompt: promptInput,
-            count: count,
-          }),
-        },
-      )
+    setLoading(true)
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.detail || "Something went wrong")
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+    const url = `${backendUrl}/api/v1/webscrape-stream?user_request=${encodeURIComponent(
+      usernames[0].replace("@", "")
+    )}&user_prompt=${encodeURIComponent(promptInput)}&count=${count}`
+
+    const es = new EventSource(url)
+
+    es.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data)
+        if (payload.total_fetched !== undefined) {
+          setFetched(payload.total_fetched)
+        }
+      } catch (e) {
+        // ignore malformed messages
       }
-
-      const data = await response.json()
-      setResult(data)
-    } catch (err: any) {
-      setError(err.message || "Unexpected error")
-    } finally {
-      setLoading(false)
     }
+
+    es.addEventListener("done", (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent).data)
+        setResult(payload)
+      } catch (_) {}
+      setLoading(false)
+      es.close()
+    })
+
+    es.addEventListener("error", () => {
+      setError("Stream error")
+      setLoading(false)
+      es.close()
+    })
   }
 
   const downloadCSV = () => {
@@ -246,7 +253,11 @@ export default function HomePage() {
                 {/* Action Button */}
                 <Button className="w-full bg-blue-500 hover:bg-blue-600" size="lg" onClick={handleAnalyze} disabled={loading}>
                   <Search className="w-4 h-4 mr-2" />
-                  {loading ? "Filtering..." : "Filter Profile"}
+                  {loading ? (
+                    fetched > 0 ? `Fetched ${fetched}` : "Filtering..."
+                  ) : (
+                    "Filter Profile"
+                  )}
                 </Button>
 
                 {error && <p className="text-sm text-red-600 text-center">{error}</p>}
@@ -274,7 +285,13 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div className="text-center py-12 text-gray-500">Processing...</div>
+                  <div className="text-center py-12 text-gray-500">
+                    {fetched > 0 ? (
+                      <p>Fetched {fetched} followers so far...</p>
+                    ) : (
+                      <p>Processing...</p>
+                    )}
+                  </div>
                 ) : result ? (
                   <div className="space-y-4">
                     <p className="text-sm text-gray-700">Found {result.count} relevant followers:</p>
