@@ -1,18 +1,26 @@
 "use client"
 
 import React, { useState } from "react"
-import { Search, Download, Users, MessageSquare, Twitter, Globe, Calendar, MapPin, CheckCircle2 } from "lucide-react"
+import { Search, Download, Users, MessageSquare, Twitter, Globe, Calendar, MapPin, CheckCircle2, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import Image from "next/image"
 
 export default function HomePage() {
   const [usernameInput, setUsernameInput] = useState("")
   const [promptInput, setPromptInput] = useState("")
+  const [countInput, setCountInput] = useState("50")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ count: number; followers: any[] } | null>(null)
@@ -32,6 +40,12 @@ export default function HomePage() {
       return
     }
 
+    const count = parseInt(countInput)
+    if (isNaN(count) || count < 1) {
+      setError("Please enter a valid number of profiles to filter (minimum 1).")
+      return
+    }
+
     try {
       setLoading(true)
       const response = await fetch(
@@ -44,6 +58,7 @@ export default function HomePage() {
           body: JSON.stringify({
             user_request: usernames[0].replace("@", ""),
             user_prompt: promptInput,
+            count: count,
           }),
         },
       )
@@ -65,6 +80,7 @@ export default function HomePage() {
   const downloadCSV = () => {
     if (!result?.followers?.length) return
 
+    const username = usernameInput.trim().replace('@', '')
     const headers = [
       "User ID",
       "Username",
@@ -112,7 +128,7 @@ export default function HomePage() {
     const link = document.createElement("a")
     const url = URL.createObjectURL(blob)
     link.setAttribute("href", url)
-    link.setAttribute("download", "analyzed_followers.csv")
+    link.setAttribute("download", `${username}_analyzed_followers.csv`)
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -155,19 +171,59 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Username Input */}
+                {/* Username Input and Filter Options */}
                 <div className="space-y-2">
                   <Label htmlFor="usernames" className="flex items-center gap-2 text-sm font-medium">
-                    <Users className="w-4 h-4" />X Username
+                    <Users className="w-4 h-4" />
+                    X Username
                   </Label>
-                  <Textarea
-                    id="usernames"
-                    placeholder="Enter one username (example: @elonmusk)"
-                    className="min-h-[80px] resize-none"
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500">Please enter exactly one username.</p>
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-1">
+                      <Textarea
+                        id="usernames"
+                        placeholder="Enter one username (example: @elonmusk)"
+                        className="min-h-[80px] resize-none"
+                        value={usernameInput}
+                        onChange={(e) => setUsernameInput(e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Please enter exactly one username.</p>
+                    </div>
+                    <div className="flex flex-col gap-1 min-w-[180px]">
+                      <Label className="flex items-center gap-2 text-sm font-medium">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        Filter Count
+                      </Label>
+                      <Select value={countInput} onValueChange={setCountInput}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Number of profiles" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="20">20 profiles</SelectItem>
+                          <SelectItem value="50">50 profiles (default)</SelectItem>
+                          <SelectItem value="100">100 profiles</SelectItem>
+                          <SelectItem value="200">200 profiles</SelectItem>
+                          <SelectItem value="500">500 profiles</SelectItem>
+                          <SelectItem value="custom">Custom number...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {countInput === 'custom' && (
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="Enter number"
+                          className="mt-1 w-full px-3 py-1.5 rounded-md border border-input bg-background text-sm"
+                          value={countInput === 'custom' ? '' : countInput}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value && parseInt(value) > 0) {
+                              setCountInput(value);
+                            }
+                          }}
+                        />
+                      )}
+                      <p className="text-xs text-gray-500">Select or enter number of profiles to filter</p>
+                    </div>
+                  </div>
                 </div>
 
                 <Separator />

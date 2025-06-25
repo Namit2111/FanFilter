@@ -9,7 +9,8 @@ async def get_twitter_followers(username: str, cursor: Optional[str] = None) -> 
     Fetch Twitter followers using the RapidAPI Twitter API.
     """
     url = f"https://{TWITTER_API_HOST}/followers.php?screenname={username}"
-    
+    if cursor:
+        url += f"&cursor={cursor}"
 
     settings = get_settings()
     headers = {

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, confloat
+from pydantic import BaseModel, Field, confloat, field_validator
 from typing import Optional, List
 from pydantic import HttpUrl
 
@@ -68,13 +68,13 @@ class UserInfo(BaseModel):
     user_id: str
     tags: List[str]
     ai_analysis_notes: str
-    bot_score: float = Field(
+    bot_score: int = Field(
         ...,
-        ge=1.0,
-        le=10.0,
+        ge=1,
+        le=10,
         description="Bot score from 1 (human) to 10 (definitely a bot)"
     )
-
+    
 class RelevantUsersResponse(BaseModel):
     total_matches: int
     users: List[UserInfo]   
@@ -83,3 +83,4 @@ class RelevantUsersResponse(BaseModel):
 class WebscrapeRequest(BaseModel):
     user_request: str
     user_prompt: str
+    count: Optional[int] = 100

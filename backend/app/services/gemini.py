@@ -74,32 +74,49 @@ settings = get_settings()
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 # model = genai.GenerativeModel(model_name="gemini-2.0-flash-lite")  # You can change the model name as needed
 
+from pydantic import ValidationError
+import logging
+
 async def analyze_user_gemini(
-    prompt: str,
+    prompt: str,  # Must pass this argument now
     model_name: str = "gemini-2.0-flash-lite",
 ):
     """
-    Sends a system prompt and user query to Gemini, parses the response with a Pydantic model.
+    Sends a prompt to Gemini, parses the response using a Pydantic model.
 
     Args:
-        system_prompt (str): The system message prompt.
-        user_query (str): The user message/query.
-        response_model (Type[BaseModel]): Pydantic model class to parse the output.
-        model_name (str): Gemini model to use. Defaults to 'gemini-1.5-pro'.
+        prompt (str): The prompt to send to Gemini.
+        response_model (Type[BaseModel]): The Pydantic model to parse the response.
+        model_name (str): Gemini model name.
 
     Returns:
-        An instance of the response_model parsed from the output.
+        An instance of the response_model, or raises error if parsing fails.
     """
+    try:
+        # Generate content
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": RelevantUsersResponse,
+            }
+        )
+        with open("response.json", "w", encoding="utf-8") as f:
+            f.write(str(response))
 
-    full_prompt = prompt
+        # Check if parsed response exists
+        if not hasattr(response, "parsed") or response.parsed is None:
+            raise ValueError("No parsed content returned from Gemini.")
 
-    # Generate content
-    response = client.models.generate_content(
-        model=model_name, contents=full_prompt,config={
-        "response_mime_type": "application/json",
-        "response_schema": RelevantUsersResponse,
-    })
+        return response.parsed
 
-    # Parse response
-    return response.parsed  # This will be an instance of the Pydantic model
+    except ValidationError as ve:
+        logging.error(f"Pydantic parsing failed: {ve}")
+        raise
+
+    except Exception as e:
+        logging.error(f"Gemini request failed: {e}")
+        raise
+
 
