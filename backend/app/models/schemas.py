@@ -84,3 +84,4 @@ class WebscrapeRequest(BaseModel):
     user_request: str
     user_prompt: str
     count: Optional[int] = 100
+    cursor: Optional[str] = None

@@ -23,17 +23,23 @@ export default function HomePage() {
   const [countInput, setCountInput] = useState("50")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<{ count: number; followers: any[] } | null>(null)
+  const [result, setResult] = useState<{ count: number; followers: any[]; next_cursor?: string } | null>(null)
+  const [streamFollowers, setStreamFollowers] = useState<any[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [fetched, setFetched] = useState(0)
   const [displayCount, setDisplayCount] = useState(10)
+  const [copySuccess, setCopySuccess] = useState(false)
   const ITEMS_PER_PAGE = 10
 
   const handleAnalyze = () => {
     setError("")
     setResult(null)
+    setStreamFollowers([])
+    setNextCursor(null)
     setFetched(0)
     setDisplayCount(ITEMS_PER_PAGE)
+    setCopySuccess(false)
 
     const usernames = usernameInput
       .split(/[\s,]+/)
@@ -56,7 +62,9 @@ export default function HomePage() {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
     const url = `${backendUrl}/api/v1/webscrape-stream?user_request=${encodeURIComponent(
       usernames[0].replace("@", "")
-    )}&user_prompt=${encodeURIComponent(promptInput)}&count=${count}`
+    )}&user_prompt=${encodeURIComponent(promptInput)}&count=${count}${
+      nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : ''
+    }`
 
     const es = new EventSource(url)
 
@@ -66,15 +74,42 @@ export default function HomePage() {
         if (payload.total_fetched !== undefined) {
           setFetched(payload.total_fetched)
         }
+        if (payload.cursor !== undefined) {
+          setNextCursor(payload.cursor)
+        }
       } catch (e) {
         // ignore malformed messages
       }
     }
 
+    es.addEventListener("cursor", (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent).data)
+        if (payload.cursor !== undefined) {
+          setNextCursor(payload.cursor)
+        }
+      } catch (_) {}
+    })
+
+    es.addEventListener("batch", (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent).data)
+        if (payload.followers?.length) {
+          setStreamFollowers((prev) => [...prev, ...payload.followers])
+        }
+        if (payload.next_cursor !== undefined) {
+          setNextCursor(payload.next_cursor)
+        }
+      } catch (_) {}
+    })
+
     es.addEventListener("done", (event) => {
       try {
         const payload = JSON.parse((event as MessageEvent).data)
         setResult(payload)
+        if (payload.next_cursor !== undefined) {
+          setNextCursor(payload.next_cursor)
+        }
       } catch (_) {}
       setLoading(false)
       es.close()
@@ -88,7 +123,7 @@ export default function HomePage() {
   }
 
   const downloadCSV = () => {
-    if (!result?.followers?.length) return
+    if (!result?.followers?.length && !streamFollowers.length) return
 
     const username = usernameInput.trim().replace('@', '')
     const headers = [
@@ -110,7 +145,8 @@ export default function HomePage() {
       "Bot Score",
     ]
 
-    const rows = result.followers.map((f) => [
+    const rowsSource = result?.followers?.length ? result.followers : streamFollowers
+    const rows = rowsSource.map((f) => [
       f.user_id || f.id,
       f.screen_name,
       f.name,
@@ -238,6 +274,24 @@ export default function HomePage() {
 
                 <Separator />
 
+                {/* Cursor Input (Optional) */}
+                <div className="space-y-2">
+                  <Label htmlFor="cursor" className="flex items-center gap-2 text-sm font-medium">
+                    <Globe className="w-4 h-4" />
+                    Resume Cursor (Optional)
+                  </Label>
+                  <Textarea
+                    id="cursor"
+                    placeholder="Paste a cursor here to continue from where you left off"
+                    className="min-h-[40px] resize-none"
+                    value={nextCursor || ""}
+                    onChange={(e) => setNextCursor(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500">If you have a cursor from a previous run, paste it here to continue from that point.</p>
+                </div>
+
+                <Separator />
+
                 {/* Prompt Input */}
                 <div className="space-y-2">
                   <Label htmlFor="prompt" className="flex items-center gap-2 text-sm font-medium">
@@ -275,7 +329,7 @@ export default function HomePage() {
                     <Download className="w-5 h-5 text-green-600" />
                     Filter Results
                   </span>
-                  {result?.followers?.length ? (
+                  {result?.followers?.length || streamFollowers.length ? (
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-gray-500">Download CSV for full filter details</p>
                       <Button variant="outline" size="sm" onClick={downloadCSV}>
@@ -288,18 +342,72 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div className="text-center py-12 text-gray-500">
-                    {fetched > 0 ? (
-                      <p>Fetched {fetched} followers so far...</p>
-                    ) : (
-                      <p>Processing...</p>
+                  <div className="space-y-6">
+                    {nextCursor && (
+                      <div className="bg-gray-50 p-4 rounded-lg border">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <h3 className="font-medium text-gray-900">Resume Point</h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(nextCursor);
+                              setCopySuccess(true);
+                              setTimeout(() => setCopySuccess(false), 2000);
+                            }}
+                          >
+                            <span className="mr-2">{copySuccess ? 'Copied!' : 'Copy Cursor'}</span>
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Save this cursor to continue from where you left off if the process stops:
+                        </p>
+                        <code className="block bg-white p-2 rounded border text-sm break-all">
+                          {nextCursor}
+                        </code>
+                      </div>
                     )}
+                    <div className="text-center py-12 text-gray-500">
+                      {fetched > 0 ? (
+                        <p>Fetched {fetched} followers so far...</p>
+                      ) : (
+                        <p>Processing...</p>
+                      )}
+                    </div>
                   </div>
-                ) : result ? (
+                ) : (result || streamFollowers.length) ? (
                   <div className="space-y-4">
-                    <p className="text-sm text-gray-700">Found {result.count} relevant followers:</p>
+                    {nextCursor && (
+                      <div className="bg-gray-50 p-4 rounded-lg border mb-4">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <h3 className="font-medium text-gray-900">Resume Point</h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(nextCursor);
+                              setCopySuccess(true);
+                              setTimeout(() => setCopySuccess(false), 2000);
+                            }}
+                          >
+                            <span className="mr-2">{copySuccess ? 'Copied!' : 'Copy Cursor'}</span>
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Save this cursor to continue from where you left off if the process stops:
+                        </p>
+                        <code className="block bg-white p-2 rounded border text-sm break-all">
+                          {nextCursor}
+                        </code>
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-700">
+                      Found {(result?.count ?? streamFollowers.length)} relevant followers:
+                    </p>
                     <ul className="grid gap-2">
-                      {result.followers.slice(0, displayCount).map((f: any) => (
+                      {(result?.followers ?? streamFollowers).slice(0, displayCount).map((f: any) => (
                         <li
                           key={f.user_id || f.id}
                           className="border rounded p-3 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -340,14 +448,14 @@ export default function HomePage() {
                         </li>
                       ))}
                     </ul>
-                    {displayCount < result.followers.length && (
+                    {displayCount < (result?.followers?.length ?? streamFollowers.length) && (
                       <div className="mt-4 text-center">
                         <Button
                           variant="outline"
                           onClick={() => setDisplayCount(prev => prev + ITEMS_PER_PAGE)}
                           className="w-full max-w-xs"
                         >
-                          Load More ({result.followers.length - displayCount} remaining)
+                          Load More ({(result?.followers?.length ?? streamFollowers.length) - displayCount} remaining)
                         </Button>
                       </div>
                     )}

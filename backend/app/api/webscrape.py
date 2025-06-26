@@ -48,6 +48,7 @@ async def flock_users(request: WebscrapeRequest, event_callback=None):
             raise e
         users = response.get("users", [])
         next_cursor = response.get("next_cursor_str")
+        
         total_fetched += len(users)
         if event_callback:
             await event_callback({"total_fetched": total_fetched})
@@ -74,7 +75,8 @@ async def flock_users(request: WebscrapeRequest, event_callback=None):
                     analyzed_final_users.append(user)
         if not next_cursor:
             break
-
+        if event_callback:
+            await event_callback({"cursor": next_cursor})
     if not analyzed_final_users:
         raise HTTPException(status_code=404, detail="No followers found or user not found")
 
@@ -98,7 +100,7 @@ async def webscrape(request: WebscrapeRequest):
 # ---------------------------------------------------------------------------
 
 @router.get("/webscrape-stream")
-async def webscrape_stream(user_request: str, user_prompt: str, count: int = 100):
+async def webscrape_stream(user_request: str, user_prompt: str, count: int = 100, cursor: str | None = None):
     """Stream total_fetched updates while followers are being processed."""
 
     queue: asyncio.Queue[str | None] = asyncio.Queue()
@@ -114,6 +116,7 @@ async def webscrape_stream(user_request: str, user_prompt: str, count: int = 100
                     user_request=user_request,
                     user_prompt=user_prompt,
                     count=count,
+                    cursor=cursor
                 ),
                 event_callback=_event_cb,
             )
