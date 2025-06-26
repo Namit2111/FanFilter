@@ -77,6 +77,7 @@ async def flock_users(request: WebscrapeRequest, event_callback=None):
             break
         if event_callback:
             await event_callback({"cursor": next_cursor})
+            await event_callback({"followers": analyzed_final_users})
     if not analyzed_final_users:
         raise HTTPException(status_code=404, detail="No followers found or user not found")
 

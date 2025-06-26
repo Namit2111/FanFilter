@@ -21,6 +21,7 @@ export default function HomePage() {
   const [usernameInput, setUsernameInput] = useState("")
   const [promptInput, setPromptInput] = useState("")
   const [countInput, setCountInput] = useState("50")
+  const [isCustomCount, setIsCustomCount] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ count: number; followers: any[]; next_cursor?: string } | null>(null)
@@ -31,6 +32,10 @@ export default function HomePage() {
   const [displayCount, setDisplayCount] = useState(10)
   const [copySuccess, setCopySuccess] = useState(false)
   const ITEMS_PER_PAGE = 10
+
+  const isStreaming = loading && streamFollowers.length > 0 && !result?.followers?.length
+  const csvHelperText = isStreaming ? "Download partial CSV (updates as profiles are processed)" : "Download CSV for full filter details"
+  const csvButtonLabel = isStreaming ? "Download Partial CSV" : "Download CSV"
 
   const handleAnalyze = () => {
     setError("")
@@ -52,8 +57,16 @@ export default function HomePage() {
     }
 
     const count = parseInt(countInput)
-    if (isNaN(count) || count < 1) {
+    if (isNaN(count)) {
       setError("Please enter a valid number of profiles to filter (minimum 1).")
+      return
+    }
+    if (count < 1) {
+      setError("Please enter a valid number of profiles to filter (minimum 1).")
+      return
+    }
+    if (count > 2000) {
+      setError("Maximum number of profiles to filter is 2000.")
       return
     }
 
@@ -77,6 +90,15 @@ export default function HomePage() {
         if (payload.cursor !== undefined) {
           setNextCursor(payload.cursor)
         }
+        if (payload.followers?.length) {
+          setStreamFollowers((prev) => {
+            const existingIds = new Set(prev.map((u) => u.user_id ?? u.id))
+            const newUnique = payload.followers.filter(
+              (u: any) => !(existingIds.has(u.user_id ?? u.id))
+            )
+            return [...prev, ...newUnique]
+          })
+        }
       } catch (e) {
         // ignore malformed messages
       }
@@ -87,18 +109,6 @@ export default function HomePage() {
         const payload = JSON.parse((event as MessageEvent).data)
         if (payload.cursor !== undefined) {
           setNextCursor(payload.cursor)
-        }
-      } catch (_) {}
-    })
-
-    es.addEventListener("batch", (event) => {
-      try {
-        const payload = JSON.parse((event as MessageEvent).data)
-        if (payload.followers?.length) {
-          setStreamFollowers((prev) => [...prev, ...payload.followers])
-        }
-        if (payload.next_cursor !== undefined) {
-          setNextCursor(payload.next_cursor)
         }
       } catch (_) {}
     })
@@ -239,7 +249,15 @@ export default function HomePage() {
                         <SlidersHorizontal className="w-4 h-4" />
                         Filter Count
                       </Label>
-                      <Select value={countInput} onValueChange={setCountInput}>
+                      <Select value={isCustomCount ? 'custom' : countInput} onValueChange={(value) => {
+                        if (value === 'custom') {
+                          setIsCustomCount(true)
+                          setCountInput('') // reset custom input
+                        } else {
+                          setIsCustomCount(false)
+                          setCountInput(value)
+                        }
+                      }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Number of profiles" />
                         </SelectTrigger>
@@ -249,25 +267,35 @@ export default function HomePage() {
                           <SelectItem value="100">100 profiles</SelectItem>
                           <SelectItem value="200">200 profiles</SelectItem>
                           <SelectItem value="500">500 profiles</SelectItem>
+                          <SelectItem value="1000">1000 profiles</SelectItem>
+                          <SelectItem value="2000">2000 profiles (maximum)</SelectItem>
                           <SelectItem value="custom">Custom number...</SelectItem>
                         </SelectContent>
                       </Select>
-                      {countInput === 'custom' && (
+                      {isCustomCount && (
                         <input
                           type="number"
                           min="1"
-                          placeholder="Enter number"
+                          max="2000"
+                          placeholder="Enter number (max 2000)"
                           className="mt-1 w-full px-3 py-1.5 rounded-md border border-input bg-background text-sm"
-                          value={countInput === 'custom' ? '' : countInput}
+                          value={countInput}
                           onChange={(e) => {
-                            const value = e.target.value;
-                            if (value && parseInt(value) > 0) {
-                              setCountInput(value);
+                            const value = e.target.value
+                            // allow empty while typing
+                            if (value === '') {
+                              setCountInput('')
+                              return
+                            }
+                            const numeric = parseInt(value)
+                            if (!isNaN(numeric) && numeric > 0) {
+                              const capped = Math.min(numeric, 2000)
+                              setCountInput(capped.toString())
                             }
                           }}
                         />
                       )}
-                      <p className="text-xs text-gray-500">Select or enter number of profiles to filter</p>
+                      <p className="text-xs text-gray-500">Select or enter number of profiles to filter (maximum 2000)</p>
                     </div>
                   </div>
                 </div>
@@ -331,10 +359,10 @@ export default function HomePage() {
                   </span>
                   {result?.followers?.length || streamFollowers.length ? (
                     <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-500">Download CSV for full filter details</p>
+                      <p className="text-sm text-gray-500">{csvHelperText}</p>
                       <Button variant="outline" size="sm" onClick={downloadCSV}>
                         <Download className="w-4 h-4 mr-2" />
-                        Download CSV
+                        {csvButtonLabel}
                       </Button>
                     </div>
                   ) : null}
