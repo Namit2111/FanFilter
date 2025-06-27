@@ -528,14 +528,14 @@ export default function HomePage() {
                         </li>
                       ))}
                     </ul>
-                    {displayCount < (result?.followers?.length ?? streamFollowers.length) && (
+                    {displayCount < (result?.followers ?? streamFollowers).filter(f => f.prompt_match_score > 0).length && (
                       <div className="mt-4 text-center">
                         <Button
                           variant="outline"
                           onClick={() => setDisplayCount(prev => prev + ITEMS_PER_PAGE)}
                           className="w-full max-w-xs"
                         >
-                          Load More ({(result?.followers?.length ?? streamFollowers.length) - displayCount} remaining)
+                          Load More ({(result?.followers ?? streamFollowers).filter(f => f.prompt_match_score > 0).length - displayCount} remaining)
                         </Button>
                       </div>
                     )}
