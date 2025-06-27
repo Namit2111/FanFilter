@@ -479,10 +479,13 @@ export default function HomePage() {
                       </div>
                     )}
                     <p className="text-sm text-gray-700">
-                      Found {(result?.count ?? streamFollowers.length)} relevant followers:
+                      Found {(result?.count ?? streamFollowers.length)} total followers, {(result?.followers ?? streamFollowers).filter(f => f.prompt_match_score > 0).length} relevant:
                     </p>
                     <ul className="grid gap-2">
-                      {(result?.followers ?? streamFollowers).slice(0, displayCount).map((f: any) => (
+                      {(result?.followers ?? streamFollowers)
+                        .filter(f => f.prompt_match_score > 0)
+                        .slice(0, displayCount)
+                        .map((f: any) => (
                         <li
                           key={f.user_id || f.id}
                           className="border rounded p-3 hover:bg-gray-50 cursor-pointer transition-colors"
