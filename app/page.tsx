@@ -198,7 +198,9 @@ export default function HomePage() {
     ]
 
     const rowsSource = result?.followers?.length ? result.followers : streamFollowers
-    const rows = rowsSource.map((f) => [
+    // Sort rows by prompt_match_score in descending order
+    const sortedRowsSource = [...rowsSource].sort((a, b) => (b.prompt_match_score || 0) - (a.prompt_match_score || 0))
+    const rows = sortedRowsSource.map((f) => [
       f.user_id || f.id,
       f.screen_name,
       f.name,
