@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Search, Download, Users, MessageSquare, Twitter, Globe, Calendar, MapPin, CheckCircle2, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,6 +36,47 @@ export default function HomePage() {
   const isStreaming = loading && streamFollowers.length > 0 && !result?.followers?.length
   const csvHelperText = isStreaming ? "Download partial CSV (updates as profiles are processed)" : "Download CSV for full filter details"
   const csvButtonLabel = isStreaming ? "Download Partial CSV" : "Download CSV"
+
+  // Function to play notification sound
+  const playNotificationSound = () => {
+    try {
+      const audioContext = new (window.AudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.type = 'sine'
+      oscillator.frequency.setValueAtTime(587.33, audioContext.currentTime) // D5 note
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime) // louder
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2) // fade out over 2s
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 2) // play for 2s
+    } catch (err) {
+      console.log('Audio playback failed:', err)
+    }
+  }
+  
+
+  // Add effect to update page title
+  useEffect(() => {
+    if (loading) {
+      const username = usernameInput.trim().replace('@', '')
+      document.title = `Processing @${username} - fanfilter`
+    } else {
+      document.title = 'fanfilter'
+    }
+  }, [loading, usernameInput])
+
+  // Add effect to play notification sound when streaming ends
+  useEffect(() => {
+    if (!loading && (result?.followers?.length || streamFollowers.length)) {
+      playNotificationSound()
+    }
+  }, [loading, result, streamFollowers])
 
   const handleAnalyze = () => {
     setError("")
@@ -153,6 +194,7 @@ export default function HomePage() {
       "Tags",
       "AI Analysis Notes",
       "Bot Score",
+      "Prompt Match Score",
     ]
 
     const rowsSource = result?.followers?.length ? result.followers : streamFollowers
@@ -173,11 +215,16 @@ export default function HomePage() {
       f.tags,
       f.ai_analysis_notes,
       f.bot_score,
+      f.prompt_match_score,
     ])
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${(cell || "").toString().replace(/"/g, '""')}"`).join(",")),
+      ...rows.map((row) => row.map((cell) => {
+        // Handle null, undefined, and convert everything else to string
+        const value = cell === null || cell === undefined ? "" : cell.toString();
+        return `"${value.replace(/"/g, '""')}"`;
+      }).join(",")),
     ].join("\n")
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })

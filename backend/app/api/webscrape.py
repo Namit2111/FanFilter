@@ -39,8 +39,8 @@ async def flock_users(request: WebscrapeRequest, event_callback=None):
         await event_callback({"total_fetched": 0})
 
     while total_fetched < count:
-        print(len(analyzed_final_users))
-        print(total_fetched)
+        # print(len(analyzed_final_users))
+        # print(total_fetched)
         try:
             response = await get_twitter_followers(username, next_cursor)
         except HTTPException as e:
@@ -52,7 +52,7 @@ async def flock_users(request: WebscrapeRequest, event_callback=None):
         total_fetched += len(users)
         if event_callback:
             await event_callback({"total_fetched": total_fetched})
-        print(next_cursor)
+        # print(next_cursor)
         if not users:
             break
         # Only fetch up to the remaining needed
@@ -61,18 +61,41 @@ async def flock_users(request: WebscrapeRequest, event_callback=None):
             break
         prompt = load_txt_file(file_name="prompt.txt").format(user_request=user_prompt, followers=users)
         analyzed_users = await analyze_user_gemini(prompt)
-        print(analyzed_users)
+        # print(analyzed_users)
         # Map analyzed results back to users
         if analyzed_users.total_matches == 0 or analyzed_users == None:
-            continue
-        for id in analyzed_users.users:
-            user_id = id.user_id
+            # Add all users with default values
             for user in users:
-                if user.get("user_id") == user_id:
-                    user["tags"] = id.tags
-                    user["ai_analysis_notes"] = id.ai_analysis_notes
-                    user["bot_score"] = id.bot_score
+                user["tags"] = []
+                user["ai_analysis_notes"] = ""
+                user["bot_score"] = 0
+                user["prompt_match_score"] = 0
+                analyzed_final_users.append(user)
+        else:
+            # Create a set of analyzed user IDs for quick lookup
+            analyzed_ids = {id.user_id for id in analyzed_users.users}
+       
+            # Process all users
+            for user in users:
+                user_id = user.get("user_id")
+                if user_id in analyzed_ids:
+                    # Get analysis for matched users
+                    for analysis in analyzed_users.users:
+                        if analysis.user_id == user_id:
+                            user["tags"] = analysis.tags
+                            user["ai_analysis_notes"] = analysis.ai_analysis_notes
+                            user["bot_score"] = analysis.bot_score
+                            user["prompt_match_score"] = analysis.prompt_match_score  # Set to 1.0 for matched users if not provided
+                            analyzed_final_users.append(user)
+                            break
+                else:
+                    # Add default values for unmatched users
+                    user["tags"] = []
+                    user["ai_analysis_notes"] = ""
+                    user["bot_score"] = 0
+                    user["prompt_match_score"] = 0
                     analyzed_final_users.append(user)
+                   
         if not next_cursor:
             break
         if event_callback:

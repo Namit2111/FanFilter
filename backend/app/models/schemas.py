@@ -74,7 +74,11 @@ class UserInfo(BaseModel):
         le=10,
         description="Bot score from 1 (human) to 10 (definitely a bot)"
     )
-    
+    prompt_match_score: int = Field(
+        ge=1,
+        le=10,
+        description="Prompt match score from 1 (slight match) to 10 (perfect match)"
+    )
 class RelevantUsersResponse(BaseModel):
     total_matches: int
     users: List[UserInfo]   

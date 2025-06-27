@@ -79,7 +79,7 @@ import logging
 
 async def analyze_user_gemini(
     prompt: str,  # Must pass this argument now
-    model_name: str = "gemini-2.5-flash-lite-preview-06-17",
+    model_name: str = "gemini-2.0-flash",
 ):
     """
     Sends a prompt to Gemini, parses the response using a Pydantic model.
