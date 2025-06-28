@@ -9,6 +9,8 @@ settings = get_settings()
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
+    docs_url="/docsssss",
+    redoc_url="/redocsssss",
 )
 
 # Add CORS middleware
