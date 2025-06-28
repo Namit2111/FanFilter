@@ -2,17 +2,36 @@ from app.core.db import get_db
 from datetime import datetime
 from app.models.db import GiftCard
 from app.utils.helpers import generate_gift_card_code
+import csv
 
 db = get_db()
 
 def create_gift_card(credits: int):
+    code = generate_gift_card_code()
     gift_card = GiftCard(
-        code=generate_gift_card_code(),
+        code=code,
         credits=credits,
         created_at=datetime.now(),
     )
     result = db.gift_cards.insert_one(gift_card.model_dump())
-    return str(result.inserted_id)
+    return code
+
+
+
+def create_bulk_gift_cards(credits: int, count: int) -> str:
+    codes = []
+    for _ in range(count):
+        code = create_gift_card(credits)
+        codes.append(code)
+    
+    csv_file = "giftcards.csv"
+    with open(csv_file, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["GiftCardCode"])
+        for code in codes:
+            writer.writerow([code])
+    
+    return csv_file
 
 def get_gift_card(code: str):
     gift_card = db.gift_cards.find_one({"code": code})
