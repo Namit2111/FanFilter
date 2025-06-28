@@ -10,6 +10,7 @@ from app.models.schemas import WebscrapeRequest
 import json
 import asyncio
 from fastapi.responses import StreamingResponse
+from app.services.db.giftcard import deduct_credits
 
 router = APIRouter()
 
@@ -124,9 +125,13 @@ async def webscrape(request: WebscrapeRequest):
 # ---------------------------------------------------------------------------
 
 @router.get("/webscrape-stream")
-async def webscrape_stream(user_request: str, user_prompt: str, count: int = 100, cursor: str | None = None):
+async def webscrape_stream(user_request: str, user_prompt: str, count: int = 100, cursor: str | None = None, code: str | None = None):
     """Stream total_fetched updates while followers are being processed."""
 
+    if code:
+        is_deducted = deduct_credits(code, count)
+        if not is_deducted:
+            raise HTTPException(status_code=400, detail="Invalid gift card code or insufficient credits")
     queue: asyncio.Queue[str | None] = asyncio.Queue()
 
     async def _event_cb(payload: dict):
