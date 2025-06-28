@@ -7,3 +7,4 @@ aiofiles
 pydantic-settings 
 google-generativeai
 google-genai
+pymongo

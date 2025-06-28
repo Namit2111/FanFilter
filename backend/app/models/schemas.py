@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, confloat, field_validator
+from pydantic import BaseModel, Field
 from typing import Optional, List
-from pydantic import HttpUrl
+
 
 class CustomerRecord(BaseModel):
     twitter_username: str

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.api.webscrape import router as webscrape_router
+from app.api.giftcard import giftcard_router
 
 settings = get_settings()
 
@@ -21,6 +22,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(webscrape_router, prefix=settings.API_V1_STR)
+app.include_router(giftcard_router, prefix=settings.API_V1_STR)
 
 if __name__ == "__main__":
     import uvicorn

@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     RAPID_API_KEY: str
     GEMINI_API_KEY: str
     
+    #DB Config
+    MONGODB_URI: str
+    DATABASE_NAME: str
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
