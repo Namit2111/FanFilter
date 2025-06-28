@@ -67,6 +67,13 @@ export default function HomePage() {
     }
   }, [debouncedGiftCardCode])
 
+  // Effect to revalidate gift card when count changes
+  useEffect(() => {
+    if (giftCardCode) {
+      validateGiftCard(giftCardCode)
+    }
+  }, [countInput])
+
   const isStreaming = loading && streamFollowers.length > 0 && !result?.followers?.length
   const csvHelperText = isStreaming ? "Download partial CSV (updates as profiles are processed)" : "Download CSV for full filter details"
   const csvButtonLabel = isStreaming ? "Download Partial CSV" : "Download CSV"
@@ -108,10 +115,16 @@ export default function HomePage() {
       const response = await fetch(`${backendUrl}/api/v1/giftcard/get?code=${encodeURIComponent(code)}`)
       const data = await response.json()
       
+      const currentCount = parseInt(countInput) || 50
       if (response.ok && data && data.credits > 0) {
-        setGiftCardValid(true)
-        setGiftCardError("")
-        setError("")
+        if (data.credits >= currentCount) {
+          setGiftCardValid(true)
+          setGiftCardError("")
+          setError("")
+        } else {
+          setGiftCardValid(false)
+          setGiftCardError(`Gift card only has ${data.credits} credits, but you need ${currentCount} credits`)
+        }
       } else {
         setGiftCardValid(false)
         setGiftCardError("Invalid gift card code or insufficient credits")
