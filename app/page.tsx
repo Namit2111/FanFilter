@@ -31,7 +31,41 @@ export default function HomePage() {
   const [fetched, setFetched] = useState(0)
   const [displayCount, setDisplayCount] = useState(10)
   const [copySuccess, setCopySuccess] = useState(false)
+  const [giftCardCode, setGiftCardCode] = useState("")
+  const [giftCardValid, setGiftCardValid] = useState(false)
+  const [validatingCard, setValidatingCard] = useState(false)
+  const [giftCardError, setGiftCardError] = useState("")
   const ITEMS_PER_PAGE = 10
+  const MAX_FREE_COUNT = 50
+
+  // Debounce function
+  const useDebounce = (value: string, delay: number) => {
+    const [debouncedValue, setDebouncedValue] = useState(value)
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value)
+      }, delay)
+
+      return () => {
+        clearTimeout(handler)
+      }
+    }, [value, delay])
+
+    return debouncedValue
+  }
+
+  const debouncedGiftCardCode = useDebounce(giftCardCode, 500) // 500ms delay
+
+  // Effect for debounced gift card validation
+  useEffect(() => {
+    if (debouncedGiftCardCode) {
+      validateGiftCard(debouncedGiftCardCode)
+    } else {
+      setGiftCardValid(false)
+      setGiftCardError("")
+    }
+  }, [debouncedGiftCardCode])
 
   const isStreaming = loading && streamFollowers.length > 0 && !result?.followers?.length
   const csvHelperText = isStreaming ? "Download partial CSV (updates as profiles are processed)" : "Download CSV for full filter details"
@@ -59,7 +93,36 @@ export default function HomePage() {
       console.log('Audio playback failed:', err)
     }
   }
-  
+
+  const validateGiftCard = async (code: string) => {
+    if (!code) {
+      setGiftCardValid(false)
+      setGiftCardError("")
+      return
+    }
+
+    setValidatingCard(true)
+    setGiftCardError("")
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+      const response = await fetch(`${backendUrl}/api/v1/giftcard/get?code=${encodeURIComponent(code)}`)
+      const data = await response.json()
+      
+      if (response.ok && data && data.credits > 0) {
+        setGiftCardValid(true)
+        setGiftCardError("")
+        setError("")
+      } else {
+        setGiftCardValid(false)
+        setGiftCardError("Invalid gift card code or insufficient credits")
+      }
+    } catch (err) {
+      setGiftCardValid(false)
+      setGiftCardError("Error validating gift card")
+    } finally {
+      setValidatingCard(false)
+    }
+  }
 
   // Add effect to update page title
   useEffect(() => {
@@ -111,6 +174,12 @@ export default function HomePage() {
       return
     }
 
+    // Check count limit for users without gift card
+    if (!giftCardValid && count > 50) {
+      setError("Without a gift card, you can only filter up to 50 profiles. Please enter a gift card code to filter more profiles.")
+      return
+    }
+
     setLoading(true)
 
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
@@ -118,7 +187,7 @@ export default function HomePage() {
       usernames[0].replace("@", "")
     )}&user_prompt=${encodeURIComponent(promptInput)}&count=${count}${
       nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : ''
-    }`
+    }${giftCardCode ? `&code=${encodeURIComponent(giftCardCode)}` : ''}`
 
     const es = new EventSource(url)
 
@@ -166,8 +235,18 @@ export default function HomePage() {
       es.close()
     })
 
-    es.addEventListener("error", () => {
-      setError("Stream error")
+    es.addEventListener("error", (event) => {
+      try {
+        const errorData = JSON.parse((event as MessageEvent).data)
+        if (errorData.detail === "Invalid gift card code or insufficient credits") {
+          setError("Gift card has insufficient credits for this operation")
+          setGiftCardValid(false)
+        } else {
+          setError("Stream error")
+        }
+      } catch (_) {
+        setError("Stream error")
+      }
       setLoading(false)
       es.close()
     })
@@ -311,21 +390,25 @@ export default function HomePage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="20">20 profiles</SelectItem>
-                          <SelectItem value="50">50 profiles (default)</SelectItem>
-                          <SelectItem value="100">100 profiles</SelectItem>
-                          <SelectItem value="200">200 profiles</SelectItem>
-                          <SelectItem value="500">500 profiles</SelectItem>
-                          <SelectItem value="1000">1000 profiles</SelectItem>
-                          <SelectItem value="2000">2000 profiles (maximum)</SelectItem>
-                          <SelectItem value="custom">Custom number...</SelectItem>
+                          <SelectItem value="50">50 profiles {!giftCardValid && "(maximum without gift card)"}</SelectItem>
+                          {giftCardValid && (
+                            <>
+                              <SelectItem value="100">100 profiles</SelectItem>
+                              <SelectItem value="200">200 profiles</SelectItem>
+                              <SelectItem value="500">500 profiles</SelectItem>
+                              <SelectItem value="1000">1000 profiles</SelectItem>
+                              <SelectItem value="2000">2000 profiles (maximum)</SelectItem>
+                              <SelectItem value="custom">Custom number...</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                       {isCustomCount && (
                         <input
                           type="number"
                           min="1"
-                          max="2000"
-                          placeholder="Enter number (max 2000)"
+                          max={giftCardValid ? "2000" : "50"}
+                          placeholder={`Enter number (max ${giftCardValid ? "2000" : "50"})`}
                           className="mt-1 w-full px-3 py-1.5 rounded-md border border-input bg-background text-sm"
                           value={countInput}
                           onChange={(e) => {
@@ -337,13 +420,59 @@ export default function HomePage() {
                             }
                             const numeric = parseInt(value)
                             if (!isNaN(numeric) && numeric > 0) {
-                              const capped = Math.min(numeric, 2000)
+                              const maxCount = giftCardValid ? 2000 : 50
+                              const capped = Math.min(numeric, maxCount)
                               setCountInput(capped.toString())
                             }
                           }}
                         />
                       )}
-                      <p className="text-xs text-gray-500">Select or enter number of profiles to filter (maximum 2000)</p>
+                      <p className="text-xs text-gray-500">
+                        {giftCardValid 
+                          ? "Select or enter number of profiles to filter (maximum 2000)"
+                          : "Without a gift card, you can only filter up to 50 profiles"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Gift Card Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="giftcard" className="flex items-center gap-2 text-sm font-medium">
+                    <CheckCircle2 className={`w-4 h-4 ${giftCardValid ? 'text-green-500' : giftCardError ? 'text-red-500' : ''}`} />
+                    Gift Card Code (Optional)
+                  </Label>
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-1">
+                      <input
+                        id="giftcard"
+                        type="text"
+                        placeholder="Enter gift card code"
+                        className={`w-full px-3 py-2 rounded-md border ${
+                          giftCardValid ? 'border-green-500' : 
+                          giftCardError ? 'border-red-500' : 
+                          'border-input'
+                        } bg-background text-sm`}
+                        value={giftCardCode}
+                        onChange={(e) => {
+                          const code = e.target.value.trim()
+                          setGiftCardCode(code)
+                        }}
+                        disabled={validatingCard}
+                      />
+                      <p className={`text-xs mt-1 ${
+                        validatingCard ? 'text-gray-500' : 
+                        giftCardValid ? 'text-green-600' :
+                        giftCardError ? 'text-red-600' :
+                        'text-gray-500'
+                      }`}>
+                        {validatingCard ? "Validating gift card..." : 
+                         giftCardValid ? "✓ Valid gift card" :
+                         giftCardError ? `✗ ${giftCardError}` :
+                         "Enter a gift card code to filter more than 50 profiles"}
+                      </p>
                     </div>
                   </div>
                 </div>
