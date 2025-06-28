@@ -130,7 +130,7 @@ async def webscrape_stream(user_request: str, user_prompt: str, count: int = 100
 
     if code:
         is_deducted = deduct_credits(code, count)
-        if not is_deducted:
+        if is_deducted == None:
             raise HTTPException(status_code=400, detail="Invalid gift card code or insufficient credits")
     queue: asyncio.Queue[str | None] = asyncio.Queue()
 
